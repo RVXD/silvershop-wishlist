@@ -12,15 +12,15 @@
         .wishlist__item img{border-radius:4px;object-fit:cover;flex:0 0 auto}
         .wishlist__title{flex:1;min-width:160px;text-decoration:none;color:inherit}
         .wishlist__price{font-weight:600}
-        .wishlist__drop{background:#2e7d32;color:#fff;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600;margin-left:.3rem}
-        .wishlist__avail{font-size:.8rem;color:#888}
+        .wishlist__drop{background:#2e7d32;color:#fff;border-radius:4px;padding:1px 7px;font-weight:600;margin-left:.3rem}
+        .wishlist__avail{color:#888}
         .wishlist__avail--out{color:#c0392b}
         .wishlist__act{display:inline;margin:0}
-        .wishlist__act button{background:none;border:1px solid #ccc;border-radius:4px;padding:3px 10px;font-size:.8rem;cursor:pointer;color:#555}
+        .wishlist__act button{background:none;border:1px solid #ccc;border-radius:4px;padding:3px 10px;cursor:pointer;color:#555}
         .wishlist__toolbar{margin:1rem 0 0}
         .wishlist__manage{display:inline;margin:0}
-        .wishlist__manage input[type=text]{padding:3px 7px;font-size:.8rem}
-        .wishlist__manage button{background:none;border:1px solid #ccc;border-radius:4px;padding:3px 10px;font-size:.8rem;cursor:pointer;color:#555}
+        .wishlist__manage input[type=text]{padding:3px 7px}
+        .wishlist__manage button{background:none;border:1px solid #ccc;border-radius:4px;padding:3px 10px;cursor:pointer;color:#555}
         .wishlist__new{margin:1.5rem 0 0;padding:1rem 0 0;border-top:1px solid #eee}
     </style>
 
