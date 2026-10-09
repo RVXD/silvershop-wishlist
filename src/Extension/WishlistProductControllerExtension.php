@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SilverShop\Wishlist\Extension;
 
+use SilverShop\Page\AccountPage;
 use SilverShop\Page\Product;
 use SilverShop\Page\ProductController;
 use SilverShop\Wishlist\Control\WishlistController;
@@ -45,6 +46,20 @@ class WishlistProductControllerExtension extends Extension
     {
         return Security::getCurrentUser() !== null
             || (bool) WishlistController::config()->get('allow_guest');
+    }
+
+    /**
+     * Link to the member's wishlist in the account area (empty for guests — they have no wishlist page).
+     */
+    public function WishlistPageLink(): string
+    {
+        if (!Security::getCurrentUser()) {
+            return '';
+        }
+
+        $account = AccountPage::get()->first();
+
+        return $account ? (string) $account->Link('wishlist') : '';
     }
 
     public function WishlistLink(string $action = 'toggle'): string
