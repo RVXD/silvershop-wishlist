@@ -1,7 +1,8 @@
 <%-- Wishlist toggle for the product page. Include it in your product template with the product in scope:
      <% include SilverShop\Wishlist\WishlistButton %>
-     Shown only to logged-in members; posts to the wishlist controller (CSRF-checked) and returns to the page. --%>
-<% if $CurrentMember %>
+     Shown to members, and to guests when allow_guest is on; posts to the wishlist controller (CSRF-checked)
+     and returns to the page. --%>
+<% if $WishlistEnabled %>
 <form method="post" action="$WishlistLink" class="wishlist-button">
     <style>
         .wishlist-button{display:inline-block;margin:.5rem 0}

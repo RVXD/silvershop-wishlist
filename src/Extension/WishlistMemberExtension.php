@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SilverShop\Wishlist\Extension;
 
 use SilverShop\Model\Buyable;
+use SilverShop\Wishlist\Model\SessionWishlist;
 use SilverShop\Wishlist\Model\Wishlist;
 use SilverStripe\Core\Extension;
 use SilverStripe\Security\Member;
@@ -55,5 +56,37 @@ class WishlistMemberExtension extends Extension
         $list = $this->owner->Wishlists()->first();
 
         return $list ? $list->HasBuyable($buyable) : false;
+    }
+
+    /**
+     * On login, fold any guest (session) wishlist into the member's list, then clear the session.
+     */
+    public function onAfterMemberLoggedIn(): void
+    {
+        $this->mergeSessionWishlist();
+    }
+
+    public function memberAutoLoggedIn(): void
+    {
+        $this->mergeSessionWishlist();
+    }
+
+    private function mergeSessionWishlist(): void
+    {
+        $session = SessionWishlist::create();
+        $rows = $session->rows();
+        if ($rows === []) {
+            return;
+        }
+
+        $wishlist = $this->Wishlist();
+        foreach ($rows as $row) {
+            $buyable = SessionWishlist::resolveBuyable($row);
+            if ($buyable) {
+                $wishlist->AddBuyable($buyable, (int) ($row['Quantity'] ?? 1));
+            }
+        }
+
+        $session->clear();
     }
 }

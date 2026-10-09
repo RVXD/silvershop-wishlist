@@ -8,6 +8,8 @@ use SilverShop\Cart\ShoppingCart;
 use SilverShop\Model\Buyable;
 use SilverShop\Model\Variation\Variation;
 use SilverShop\Page\Product;
+use SilverShop\Wishlist\Model\SessionWishlist;
+use SilverShop\Wishlist\Model\WishlistHandler;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Config\Configurable;
@@ -15,9 +17,10 @@ use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
 
 /**
- * Front-end endpoints for a member's wishlist: add / remove / toggle a buyable, and move items to the cart.
- * Every action is POST-only and CSRF-checked (mirroring the hardened review-vote controller), then
- * redirects back. Guests are sent to the login screen.
+ * Front-end endpoints for a wishlist: add / remove / toggle a buyable, and move items to the cart. Every
+ * action is POST-only and CSRF-checked (mirroring the hardened review-vote controller), then redirects back.
+ * Logged-in members use their database list; guests use a session list (when allow_guest is on, the default)
+ * that is merged into their account on login — otherwise guests are sent to the login screen.
  */
 class WishlistController extends Controller
 {
@@ -29,6 +32,12 @@ class WishlistController extends Controller
      * Remove an item from the wishlist once it has been moved to the cart.
      */
     private static bool $remove_on_add_to_cart = false;
+
+    /**
+     * Let guests build a session wishlist (merged into their account on login). When false, guests are sent
+     * to the login screen instead.
+     */
+    private static bool $allow_guest = true;
 
     /**
      * @var array<string>
@@ -77,25 +86,15 @@ class WishlistController extends Controller
             return $this->httpError(400);
         }
 
-        $member = Security::getCurrentUser();
-        if (!$member) {
+        $handler = $this->currentHandler();
+        if (!$handler) {
             $backURL = urlencode((string) $request->getHeader('Referer'));
 
             return $this->redirect(Controller::join_links(Security::login_url(), '?BackURL=' . $backURL));
         }
 
-        $wishlist = $member->Wishlist();
-
         if ($op === 'moveall') {
-            foreach ($wishlist->Items() as $item) {
-                $buyable = $item->Buyable();
-                if ($buyable) {
-                    ShoppingCart::singleton()->add($buyable, (int) $item->Quantity);
-                    if (self::config()->get('remove_on_add_to_cart')) {
-                        $item->delete();
-                    }
-                }
-            }
+            $handler->MoveAllToCart((bool) self::config()->get('remove_on_add_to_cart'));
 
             return $this->back($request);
         }
@@ -107,23 +106,41 @@ class WishlistController extends Controller
 
         switch ($op) {
             case 'add':
-                $wishlist->AddBuyable($buyable, $this->requestedQuantity($request));
+                $handler->AddBuyable($buyable, $this->requestedQuantity($request));
                 break;
             case 'remove':
-                $wishlist->RemoveBuyable($buyable);
+                $handler->RemoveBuyable($buyable);
                 break;
             case 'toggle':
-                $wishlist->ToggleBuyable($buyable, $this->requestedQuantity($request));
+                $handler->ToggleBuyable($buyable, $this->requestedQuantity($request));
                 break;
             case 'movetocart':
                 ShoppingCart::singleton()->add($buyable, $this->requestedQuantity($request));
                 if (self::config()->get('remove_on_add_to_cart')) {
-                    $wishlist->RemoveBuyable($buyable);
+                    $handler->RemoveBuyable($buyable);
                 }
                 break;
         }
 
         return $this->back($request);
+    }
+
+    /**
+     * The wishlist to operate on: the member's database list, or a guest session list (when allow_guest),
+     * or null — meaning the guest must log in first.
+     */
+    protected function currentHandler(): ?WishlistHandler
+    {
+        $member = Security::getCurrentUser();
+        if ($member) {
+            return $member->Wishlist();
+        }
+
+        if (self::config()->get('allow_guest')) {
+            return SessionWishlist::create();
+        }
+
+        return null;
     }
 
     protected function buyableFromRequest(HTTPRequest $request): ?Buyable

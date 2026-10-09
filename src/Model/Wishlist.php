@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SilverShop\Wishlist\Model;
 
+use SilverShop\Cart\ShoppingCart;
 use SilverShop\Model\Buyable;
 use SilverShop\Model\Variation\Variation;
 use SilverStripe\ORM\DataObject;
@@ -21,7 +22,7 @@ use SilverStripe\Security\Security;
  * @method Member Member()
  * @method HasManyList<WishlistItem> Items()
  */
-class Wishlist extends DataObject
+class Wishlist extends DataObject implements WishlistHandler
 {
     private static string $table_name = 'SilverShop_Wishlist';
 
@@ -139,6 +140,22 @@ class Wishlist extends DataObject
         $this->AddBuyable($buyable, $quantity);
 
         return true;
+    }
+
+    /**
+     * Add every item to the cart, optionally removing it from the list afterwards.
+     */
+    public function MoveAllToCart(bool $removeAfter = false): void
+    {
+        foreach ($this->Items() as $item) {
+            $buyable = $item->Buyable();
+            if ($buyable) {
+                ShoppingCart::singleton()->add($buyable, (int) $item->Quantity);
+                if ($removeAfter) {
+                    $item->delete();
+                }
+            }
+        }
     }
 
     public function canView($member = null): bool

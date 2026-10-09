@@ -7,6 +7,7 @@ namespace SilverShop\Wishlist\Extension;
 use SilverShop\Page\Product;
 use SilverShop\Page\ProductController;
 use SilverShop\Wishlist\Control\WishlistController;
+use SilverShop\Wishlist\Model\SessionWishlist;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\FieldType\DBHTMLText;
@@ -22,14 +23,28 @@ class WishlistProductControllerExtension extends Extension
 {
     public function InWishlist(): bool
     {
-        $member = Security::getCurrentUser();
-        if (!$member) {
+        $product = $this->owner->data();
+        if (!$product instanceof Product) {
             return false;
         }
 
-        $product = $this->owner->data();
+        $member = Security::getCurrentUser();
+        if ($member) {
+            return $member->hasInWishlist($product);
+        }
 
-        return $product instanceof Product ? $member->hasInWishlist($product) : false;
+        return WishlistController::config()->get('allow_guest')
+            ? SessionWishlist::create()->HasBuyable($product)
+            : false;
+    }
+
+    /**
+     * Whether the wishlist button should show at all (a member, or guests allowed).
+     */
+    public function WishlistEnabled(): bool
+    {
+        return Security::getCurrentUser() !== null
+            || (bool) WishlistController::config()->get('allow_guest');
     }
 
     public function WishlistLink(string $action = 'toggle'): string

@@ -4,10 +4,10 @@ Member wishlists for [SilverShop](https://github.com/silvershop/silvershop-core)
 customers save products (or specific variations) for later, manage them in the account area, and move them to the
 cart.
 
-> **Status — v1.** Member-only, one list per member: add / remove / toggle from the product page, an account
-> section listing saved items with live price + availability and a "price dropped" badge, and move-to-cart
-> (single or all). The data model is built around a `Wishlist` container, so later tiers (guest lists, multiple
-> named lists, sharing) slot in without reshaping it.
+> **Status — v1 + v2.** Add / remove / toggle from the product page, an account section listing saved items
+> with live price + availability and a "price dropped" badge, and move-to-cart (single or all). **Guests** get
+> a session wishlist that is **merged into their account on login** (v2). The data model is built around a
+> `Wishlist` container, so the remaining tiers (multiple named lists, sharing) slot in without reshaping it.
 
 ## Requirements
 
@@ -32,8 +32,8 @@ Then run `/dev/build?flush=all`.
 <% include SilverShop\Wishlist\WishlistButton %>
 ```
 
-It renders only for logged-in members and posts to the wishlist controller (CSRF-checked), toggling the whole
-product on/off the list and returning to the page.
+It renders for members (and for guests when `allow_guest` is on) and posts to the wishlist controller
+(CSRF-checked), toggling the whole product on/off the list and returning to the page.
 
 **Account area — the wishlist section.** It's available at `…/account/wishlist` out of the box (rendered by
 `AccountPage_wishlist.ss`). Add a link to it in your account navigation — the account controller exposes
@@ -66,6 +66,7 @@ All POST-only + CSRF-checked, operating on the current member's default list, th
 
 ```yaml
 SilverShop\Wishlist\Control\WishlistController:
+  allow_guest: true              # guests build a session wishlist, merged on login (false = require login)
   remove_on_add_to_cart: false   # remove an item once it's moved to the cart
 ```
 
@@ -76,7 +77,8 @@ SilverShop\Wishlist\Control\WishlistController:
 
 ## Roadmap
 
-- **v2** — guest wishlist (cookie/session) merged into the member list on login.
+Done: member wishlist (v1) + guest session wishlist merged on login (v2).
+
 - **v3** — multiple named lists.
 - **v4** — sharing (public link).
 
