@@ -1,0 +1,7 @@
+---
+Name: silvershop-wishlist-routes
+After: '#rootroutes'
+---
+SilverStripe\Control\Director:
+  rules:
+    'wishlist': 'SilverShop\Wishlist\Control\WishlistController'

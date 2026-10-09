@@ -1,0 +1,18 @@
+---
+Name: silvershop-wishlist
+After:
+  - silvershop-config
+---
+SilverStripe\Security\Member:
+  extensions:
+    - SilverShop\Wishlist\Extension\WishlistMemberExtension
+
+SilverShop\Page\ProductController:
+  extensions:
+    - SilverShop\Wishlist\Extension\WishlistProductControllerExtension
+
+SilverShop\Page\AccountPageController:
+  extensions:
+    - SilverShop\Wishlist\Extension\WishlistAccountExtension
+  allowed_actions:
+    - wishlist

@@ -1,0 +1,19 @@
+SilverStripe\Security\Member:
+  buyer:
+    FirstName: Buyer
+    Surname: One
+    Email: buyer@example.com
+  other:
+    FirstName: Other
+    Surname: Two
+    Email: other@example.com
+
+SilverShop\Page\Product:
+  product_a:
+    Title: Product A
+    BasePrice: 10.00
+    AllowPurchase: 1
+  product_b:
+    Title: Product B
+    BasePrice: 20.00
+    AllowPurchase: 1
