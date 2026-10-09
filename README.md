@@ -53,15 +53,23 @@ and move-to-cart. The default product-page button saves the whole product; a var
 
 ## Endpoints
 
-All POST-only + CSRF-checked, operating on the current member's default list, then redirecting back:
+POST-only + CSRF-checked, operating on the current member's list (or the `WishlistID` given, when multiple lists
+are on), then redirecting back — or returning JSON when called with `X-Requested-With: XMLHttpRequest` (the popup
+uses this):
 
-| Action | Does |
-| --- | --- |
-| `wishlist/add` | Add `ProductID` (+ optional `VariationID`, `Quantity`) |
-| `wishlist/remove` | Remove the buyable |
-| `wishlist/toggle` | Add if absent, remove if present |
-| `wishlist/movetocart` | Add the buyable to the cart |
-| `wishlist/moveall` | Add every item to the cart |
+| Action | Method | Does |
+| --- | --- | --- |
+| `wishlist/add` | POST | Add `ProductID` (+ optional `VariationID`, `Quantity`, `WishlistID`) |
+| `wishlist/remove` | POST | Remove the buyable (+ optional `WishlistID`) |
+| `wishlist/toggle` | POST | Add if absent, remove if present |
+| `wishlist/movetocart` | POST | Add the buyable to the cart |
+| `wishlist/moveall` | POST | Add every item to the cart |
+| `wishlist/createlist` | POST | Create a named list (`Title`); with a `ProductID`, also files it there *(multi-list)* |
+| `wishlist/renamelist` | POST | Rename an owned list (`WishlistID`, `Title`) *(multi-list)* |
+| `wishlist/deletelist` | POST | Delete an owned list (`WishlistID`) *(multi-list)* |
+| `wishlist/lists` | GET | JSON of the member's lists + a `contains` flag for `ProductID`/`VariationID` *(multi-list)* |
+
+The JSON payload is `{ success, inAny, lists: [{ id, title, contains }] }`.
 
 ## Configuration
 
@@ -70,19 +78,49 @@ SilverShop\Wishlist\Control\WishlistController:
   allow_guest: true              # guests build a session wishlist, merged on login (false = require login)
   remove_on_add_to_cart: false   # remove an item once it's moved to the cart
   allow_multiple_lists: false    # let members keep several named lists (create / rename / delete, pick a target)
+  enable_popup: true             # render the built-in "save to list" popup JS (only applies with allow_multiple_lists)
 ```
 
 **Multiple named lists (`allow_multiple_lists`).** Off by default — every member has one list. Turn it on and the
-account area gains create / rename / delete controls for named lists, the move-to-cart / remove actions operate on the
-list they belong to, and the product page shows an "add to list" picker once a member has more than one list. The
-`add` / `remove` / `toggle` / `movetocart` / `moveall` endpoints accept an optional `WishlistID` to target a specific
-owned list (they fall back to the member's default — oldest — list). The quick heart toggle always targets that
-default list.
+account area gains create / rename / delete controls for named lists, and the move-to-cart / remove actions operate on
+the list each item belongs to. On the product page, a logged-in member clicking the heart opens a **"save to list"
+popup** — a checkbox per list (the default pre-checked), plus "+ new list" — so an item can live in several lists at
+once. This popup is **progressive enhancement**: without JavaScript the heart just toggles the member's default
+(oldest) list, and the account page is used to organise lists. Set `enable_popup: false` to drop the built-in popup
+and drive the JSON endpoints yourself.
 
-## Extension hooks
+## Customising & extending
 
-`onAddToWishlist($item, $buyable)` / `onRemoveFromWishlist($item, $buyable)` on `Wishlist`, and
-`updateWishlistResponse($request)` on the controller.
+Everything the module renders or decides is overridable — no core edits needed.
+
+**Templates** (override by copying the path into your theme — standard Silverstripe template precedence):
+
+| Template | Purpose |
+| --- | --- |
+| `SilverShop\Wishlist\WishlistButton` | The product-page heart (+ data/markup for the popup) |
+| `SilverShop\Wishlist\WishlistPopupScript` | *Only* the popup JavaScript — override to replace behaviour, leave an empty file to disable |
+| `SilverShop\Wishlist\WishlistItems` | The account-area list(s) view |
+| `SilverShop\Page\Layout\AccountPage_wishlist` | The account `wishlist` action wrapper |
+
+**Config:** the flags above (`allow_guest`, `remove_on_add_to_cart`, `allow_multiple_lists`, `enable_popup`).
+
+**PHP extension hooks** — add a `DataExtension` to the relevant class and implement:
+
+| Hook | On | Fires when |
+| --- | --- | --- |
+| `onAddToWishlist($item, $buyable)` | `Wishlist` | A buyable is added to a list |
+| `onRemoveFromWishlist($item, $buyable)` | `Wishlist` | A buyable is removed from a list |
+| `onCreateWishlist($list)` / `onRenameWishlist($list)` / `onDeleteWishlist($list)` | `WishlistController` | A list is created / renamed / deleted |
+| `updateListsPayload(&$payload, $member, $buyable)` | `WishlistController` | Building the popup's JSON (add/adjust fields) |
+| `updateWishlistResponse($request)` | `WishlistController` | Just before a non-AJAX redirect |
+
+**JavaScript events** (dispatched on the `.wishlist-button` element, they bubble — listen on `document` to integrate
+without replacing the popup):
+
+| Event | `event.detail` |
+| --- | --- |
+| `wishlist:opened` | `{ payload, justAdded }` |
+| `wishlist:changed` | `{ action, inAny, lists, listId? }` — `action` is `add` / `remove` / `create` |
 
 ## Translations
 

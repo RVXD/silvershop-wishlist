@@ -125,4 +125,59 @@ class WishlistMultiListTest extends FunctionalTest
 
         $this->assertSame('Private', Wishlist::get()->byID($listID)->Title);
     }
+
+    public function testAjaxAddReturnsListsJson(): void
+    {
+        $this->logInAs('buyer');
+        $this->post('wishlist/createlist', ['Title' => 'A']);
+        $pid = (int) $this->objFromFixture(Product::class, 'product_a')->ID;
+
+        $response = $this->post('wishlist/add', ['ProductID' => $pid], ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $this->assertSame('application/json', $response->getHeader('Content-Type'));
+        $data = json_decode((string) $response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertTrue($data['inAny']);
+        $this->assertNotEmpty($data['lists']);
+    }
+
+    public function testListsEndpointReturnsContainsFlags(): void
+    {
+        $this->logInAs('buyer');
+        $pid = (int) $this->objFromFixture(Product::class, 'product_a')->ID;
+        $this->buyer()->Wishlist()->AddBuyable($this->objFromFixture(Product::class, 'product_a'));
+
+        $response = $this->get('wishlist/lists?ProductID=' . $pid, null, ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $data = json_decode((string) $response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $this->assertContains(true, array_column($data['lists'], 'contains'));
+    }
+
+    public function testListsEndpointForbiddenForGuest(): void
+    {
+        $this->logOut();
+
+        $response = $this->get('wishlist/lists', null, ['X-Requested-With' => 'XMLHttpRequest']);
+
+        $this->assertSame(403, $response->getStatusCode());
+    }
+
+    public function testCreateListAjaxFilesTheBuyable(): void
+    {
+        $this->logInAs('buyer');
+        $pid = (int) $this->objFromFixture(Product::class, 'product_a')->ID;
+
+        $response = $this->post(
+            'wishlist/createlist',
+            ['Title' => 'Gifts', 'ProductID' => $pid],
+            ['X-Requested-With' => 'XMLHttpRequest']
+        );
+
+        $data = json_decode((string) $response->getBody(), true);
+        $this->assertTrue($data['success']);
+        $list = $this->listByTitle($this->buyer(), 'Gifts');
+        $this->assertNotNull($list);
+        $this->assertSame(1, $list->Items()->count());
+    }
 }

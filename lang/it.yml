@@ -17,3 +17,7 @@ it:
     ListName: 'Nome della lista'
     NewList: 'Nuova lista'
     Rename: 'Rinomina'
+    Added: 'Aggiunto alla tua lista dei desideri'
+    Create: 'Crea'
+    Close: 'Chiudi'
+    Done: 'Fatto'

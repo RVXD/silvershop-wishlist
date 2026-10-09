@@ -17,3 +17,7 @@ nl:
     ListName: 'Lijstnaam'
     NewList: 'Nieuwe lijst'
     Rename: 'Hernoemen'
+    Added: 'Toegevoegd aan je verlanglijst'
+    Create: 'Aanmaken'
+    Close: 'Sluiten'
+    Done: 'Klaar'

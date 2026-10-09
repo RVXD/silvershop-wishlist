@@ -17,3 +17,7 @@ fr:
     ListName: 'Nom de la liste'
     NewList: 'Nouvelle liste'
     Rename: 'Renommer'
+    Added: 'Ajouté à votre liste de souhaits'
+    Create: 'Créer'
+    Close: 'Fermer'
+    Done: 'Terminé'

@@ -13,7 +13,9 @@ use SilverShop\Wishlist\Model\Wishlist;
 use SilverShop\Wishlist\Model\WishlistHandler;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Config\Configurable;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
 
@@ -47,6 +49,12 @@ class WishlistController extends Controller
     private static bool $allow_multiple_lists = false;
 
     /**
+     * Render the built-in "save to list" popup JavaScript on the product page (only has an effect with
+     * allow_multiple_lists). Turn it off to ship your own front-end against the JSON endpoints / DOM events.
+     */
+    private static bool $enable_popup = true;
+
+    /**
      * @var array<string>
      */
     private static array $allowed_actions = [
@@ -58,6 +66,7 @@ class WishlistController extends Controller
         'createlist',
         'renamelist',
         'deletelist',
+        'lists',
     ];
 
     public function Link($action = null): string
@@ -105,6 +114,23 @@ class WishlistController extends Controller
         return $this->manageList($request, 'delete');
     }
 
+    /**
+     * JSON: the current member's lists and whether each contains the given buyable — powers the product-page
+     * "save to list" popup. Member-only, requires allow_multiple_lists.
+     */
+    public function lists(HTTPRequest $request)
+    {
+        $member = Security::getCurrentUser();
+        if (!$member) {
+            return $this->httpError(403);
+        }
+        if (!self::config()->get('allow_multiple_lists')) {
+            return $this->httpError(400);
+        }
+
+        return $this->jsonResponse($this->listsPayload($member, $this->buyableFromRequest($request)));
+    }
+
     protected function mutate(HTTPRequest $request, string $op)
     {
         if (!$request->isPOST() || !SecurityToken::inst()->checkRequest($request)) {
@@ -145,6 +171,16 @@ class WishlistController extends Controller
                     $handler->RemoveBuyable($buyable);
                 }
                 break;
+        }
+
+        if ($this->isAjax($request)) {
+            $member = Security::getCurrentUser();
+
+            return $this->jsonResponse(
+                $member
+                    ? $this->listsPayload($member, $buyable)
+                    : ['success' => true, 'lists' => [], 'inAny' => false]
+            );
         }
 
         return $this->back($request);
@@ -208,6 +244,16 @@ class WishlistController extends Controller
             $list->write();
             $this->extend('onCreateWishlist', $list);
 
+            // From the product-page popup, "+ new list" also files the current item into the new list.
+            $buyable = $this->buyableFromRequest($request);
+            if ($buyable) {
+                $list->AddBuyable($buyable, $this->requestedQuantity($request));
+            }
+
+            if ($this->isAjax($request)) {
+                return $this->jsonResponse($this->listsPayload($member, $buyable));
+            }
+
             return $this->back($request);
         }
 
@@ -230,12 +276,13 @@ class WishlistController extends Controller
 
     protected function buyableFromRequest(HTTPRequest $request): ?Buyable
     {
-        $variationID = (int) $request->postVar('VariationID');
+        // requestVar (not postVar) so the GET "lists" endpoint can resolve the buyable too.
+        $variationID = (int) $request->requestVar('VariationID');
         if ($variationID) {
             return Variation::get()->byID($variationID);
         }
 
-        $productID = (int) $request->postVar('ProductID');
+        $productID = (int) $request->requestVar('ProductID');
         if ($productID) {
             return Product::get()->byID($productID);
         }
@@ -245,7 +292,53 @@ class WishlistController extends Controller
 
     protected function requestedQuantity(HTTPRequest $request): int
     {
-        return max(1, (int) $request->postVar('Quantity'));
+        return max(1, (int) $request->requestVar('Quantity'));
+    }
+
+    /**
+     * Whether to answer with JSON (the product-page popup calls these endpoints via fetch).
+     */
+    protected function isAjax(HTTPRequest $request): bool
+    {
+        return $request->isAjax()
+            || str_contains((string) $request->getHeader('Accept'), 'application/json');
+    }
+
+    /**
+     * The member's lists with a "contains this buyable" flag — the popup's data model.
+     *
+     * @return array{success: bool, lists: array<int, array{id: int, title: string, contains: bool}>, inAny: bool}
+     */
+    protected function listsPayload(Member $member, ?Buyable $buyable): array
+    {
+        $lists = [];
+        $inAny = false;
+        foreach ($member->OrderedWishlists() as $list) {
+            $contains = $buyable ? $list->HasBuyable($buyable) : false;
+            $inAny = $inAny || $contains;
+            $lists[] = [
+                'id' => (int) $list->ID,
+                'title' => (string) $list->Title,
+                'contains' => $contains,
+            ];
+        }
+
+        $payload = ['success' => true, 'lists' => $lists, 'inAny' => $inAny];
+        // Let integrators add/adjust fields on the popup payload (e.g. list visibility, cover images).
+        $this->extend('updateListsPayload', $payload, $member, $buyable);
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    protected function jsonResponse(array $data): HTTPResponse
+    {
+        $response = HTTPResponse::create((string) json_encode($data));
+        $response->addHeader('Content-Type', 'application/json');
+
+        return $response;
     }
 
     protected function back(HTTPRequest $request)

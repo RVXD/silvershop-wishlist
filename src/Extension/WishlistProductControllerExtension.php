@@ -10,6 +10,7 @@ use SilverShop\Page\ProductController;
 use SilverShop\Wishlist\Control\WishlistController;
 use SilverShop\Wishlist\Model\SessionWishlist;
 use SilverShop\Wishlist\Model\Wishlist;
+use SilverStripe\Control\Controller;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Extension;
 use SilverStripe\ORM\DataList;
@@ -75,6 +76,36 @@ class WishlistProductControllerExtension extends Extension
     public function AllowMultipleLists(): bool
     {
         return (bool) WishlistController::config()->get('allow_multiple_lists');
+    }
+
+    /**
+     * Root-relative base for the wishlist endpoints (e.g. "/wishlist"), used by the popup's fetch() calls so
+     * relative paths don't resolve against nested product URLs.
+     */
+    public function WishlistBaseLink(): string
+    {
+        return Controller::join_links('/', WishlistController::singleton()->Link());
+    }
+
+    /**
+     * Whether a member is logged in — the multi-list "save to list" popup is member-only (guests get the plain
+     * session toggle).
+     */
+    public function IsWishlistMember(): bool
+    {
+        return Security::getCurrentUser() !== null;
+    }
+
+    /**
+     * Whether to render the built-in "save to list" popup on this product page: multiple lists enabled, the
+     * popup not disabled by config, and a member logged in. Gate the template markup/script on this, so turning
+     * off `enable_popup` (to ship your own UI) cleanly removes it.
+     */
+    public function WishlistPopupEnabled(): bool
+    {
+        return $this->AllowMultipleLists()
+            && (bool) WishlistController::config()->get('enable_popup')
+            && $this->IsWishlistMember();
     }
 
     /**
