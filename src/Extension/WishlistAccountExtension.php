@@ -6,9 +6,12 @@ namespace SilverShop\Wishlist\Extension;
 
 use SilverShop\Page\AccountPageController;
 use SilverShop\Wishlist\Control\WishlistController;
+use SilverShop\Wishlist\Model\Wishlist;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Extension;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\FieldType\DBHTMLText;
+use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
 
 /**
@@ -35,6 +38,26 @@ class WishlistAccountExtension extends Extension
         return [];
     }
 
+    /**
+     * Whether members may keep several named lists (mirrors the controller config) — drives the account UI.
+     */
+    public function AllowMultipleLists(): bool
+    {
+        return (bool) WishlistController::config()->get('allow_multiple_lists');
+    }
+
+    /**
+     * The current member's lists, oldest (the default) first, for the account template.
+     *
+     * @return DataList<Wishlist>|null
+     */
+    public function WishlistLists(): ?DataList
+    {
+        $member = Security::getCurrentUser();
+
+        return $member ? $member->OrderedWishlists() : null;
+    }
+
     public function WishlistLink(): string
     {
         return $this->owner->Link('wishlist');
@@ -53,6 +76,21 @@ class WishlistAccountExtension extends Extension
     public function WishlistMoveAllLink(): string
     {
         return WishlistController::singleton()->Link('moveall');
+    }
+
+    public function WishlistCreateLink(): string
+    {
+        return WishlistController::singleton()->Link('createlist');
+    }
+
+    public function WishlistRenameLink(): string
+    {
+        return WishlistController::singleton()->Link('renamelist');
+    }
+
+    public function WishlistDeleteLink(): string
+    {
+        return WishlistController::singleton()->Link('deletelist');
     }
 
     public function WishlistSecurityField(): DBHTMLText

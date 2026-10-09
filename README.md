@@ -69,7 +69,15 @@ All POST-only + CSRF-checked, operating on the current member's default list, th
 SilverShop\Wishlist\Control\WishlistController:
   allow_guest: true              # guests build a session wishlist, merged on login (false = require login)
   remove_on_add_to_cart: false   # remove an item once it's moved to the cart
+  allow_multiple_lists: false    # let members keep several named lists (create / rename / delete, pick a target)
 ```
+
+**Multiple named lists (`allow_multiple_lists`).** Off by default — every member has one list. Turn it on and the
+account area gains create / rename / delete controls for named lists, the move-to-cart / remove actions operate on the
+list they belong to, and the product page shows an "add to list" picker once a member has more than one list. The
+`add` / `remove` / `toggle` / `movetocart` / `moveall` endpoints accept an optional `WishlistID` to target a specific
+owned list (they fall back to the member's default — oldest — list). The quick heart toggle always targets that
+default list.
 
 ## Extension hooks
 
@@ -83,9 +91,9 @@ All front-end strings go through `<%t SilverShop\Wishlist.* %>`. Ships with **en
 
 ## Roadmap
 
-Done: member wishlist (v1) + guest session wishlist merged on login (v2).
+Done: member wishlist (v1) + guest session wishlist merged on login (v2) + multiple named lists (v3,
+`allow_multiple_lists`).
 
-- **v3** — multiple named lists.
 - **v4** — sharing (public link).
 
 Back-in-stock / price-drop *alerts* are out of scope here (a separate `silvershop/stock-alerts` concern).

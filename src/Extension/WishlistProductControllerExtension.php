@@ -9,8 +9,10 @@ use SilverShop\Page\Product;
 use SilverShop\Page\ProductController;
 use SilverShop\Wishlist\Control\WishlistController;
 use SilverShop\Wishlist\Model\SessionWishlist;
+use SilverShop\Wishlist\Model\Wishlist;
 use SilverStripe\Core\Convert;
 use SilverStripe\Core\Extension;
+use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\Security\Security;
 use SilverStripe\Security\SecurityToken;
@@ -65,6 +67,36 @@ class WishlistProductControllerExtension extends Extension
     public function WishlistLink(string $action = 'toggle'): string
     {
         return WishlistController::singleton()->Link($action);
+    }
+
+    /**
+     * Whether members may keep several named lists (mirrors the controller config).
+     */
+    public function AllowMultipleLists(): bool
+    {
+        return (bool) WishlistController::config()->get('allow_multiple_lists');
+    }
+
+    /**
+     * The logged-in member's lists (oldest first) for the "add to list" picker — only when multiple lists are
+     * enabled and the member actually has more than one. Null otherwise (the plain toggle button is enough).
+     *
+     * @return DataList<Wishlist>|null
+     */
+    public function MemberWishlists(): ?DataList
+    {
+        if (!$this->AllowMultipleLists()) {
+            return null;
+        }
+
+        $member = Security::getCurrentUser();
+        if (!$member) {
+            return null;
+        }
+
+        $lists = $member->OrderedWishlists();
+
+        return $lists->count() > 1 ? $lists : null;
     }
 
     /**

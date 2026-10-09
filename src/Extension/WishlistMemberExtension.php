@@ -8,6 +8,7 @@ use SilverShop\Model\Buyable;
 use SilverShop\Wishlist\Model\SessionWishlist;
 use SilverShop\Wishlist\Model\Wishlist;
 use SilverStripe\Core\Extension;
+use SilverStripe\ORM\DataList;
 use SilverStripe\Security\Member;
 
 /**
@@ -32,12 +33,13 @@ class WishlistMemberExtension extends Extension
     ];
 
     /**
-     * The member's default wishlist, created on first use.
+     * The member's default wishlist — the oldest one — created on first use. Staying with the oldest keeps the
+     * default stable as further named lists are added (multiple-lists mode).
      */
     public function Wishlist(): Wishlist
     {
         /** @var Wishlist|null $list */
-        $list = $this->owner->Wishlists()->first();
+        $list = $this->owner->Wishlists()->sort('Created ASC, ID ASC')->first();
         if (!$list) {
             $list = Wishlist::create();
             $list->MemberID = $this->owner->ID;
@@ -48,12 +50,42 @@ class WishlistMemberExtension extends Extension
     }
 
     /**
-     * Whether a buyable is already on the member's wishlist (does not create an empty list).
+     * One of the member's own lists by ID, or null when it is not theirs (or the id is empty).
+     */
+    public function WishlistByID(int $id): ?Wishlist
+    {
+        if ($id <= 0) {
+            return null;
+        }
+
+        /** @var Wishlist|null $list */
+        $list = $this->owner->Wishlists()->byID($id);
+
+        return $list;
+    }
+
+    /**
+     * The member's lists, oldest (the default) first — for the account area and the product-page picker.
+     *
+     * @return DataList<Wishlist>
+     */
+    public function OrderedWishlists(): DataList
+    {
+        /** @var DataList<Wishlist> $lists */
+        $lists = Wishlist::get()
+            ->filter('MemberID', (int) $this->owner->ID)
+            ->sort('Created ASC, ID ASC');
+
+        return $lists;
+    }
+
+    /**
+     * Whether a buyable is already on the member's default wishlist (does not create an empty list).
      */
     public function hasInWishlist(Buyable $buyable): bool
     {
         /** @var Wishlist|null $list */
-        $list = $this->owner->Wishlists()->first();
+        $list = $this->owner->Wishlists()->sort('Created ASC, ID ASC')->first();
 
         return $list ? $list->HasBuyable($buyable) : false;
     }

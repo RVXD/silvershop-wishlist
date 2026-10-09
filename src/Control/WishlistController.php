@@ -9,6 +9,7 @@ use SilverShop\Model\Buyable;
 use SilverShop\Model\Variation\Variation;
 use SilverShop\Page\Product;
 use SilverShop\Wishlist\Model\SessionWishlist;
+use SilverShop\Wishlist\Model\Wishlist;
 use SilverShop\Wishlist\Model\WishlistHandler;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
@@ -40,6 +41,12 @@ class WishlistController extends Controller
     private static bool $allow_guest = true;
 
     /**
+     * Let members keep several named wishlists (create / rename / delete, and choose which one to add to).
+     * When false (the default), every member has a single list and the list-management actions are disabled.
+     */
+    private static bool $allow_multiple_lists = false;
+
+    /**
      * @var array<string>
      */
     private static array $allowed_actions = [
@@ -48,6 +55,9 @@ class WishlistController extends Controller
         'toggle',
         'movetocart',
         'moveall',
+        'createlist',
+        'renamelist',
+        'deletelist',
     ];
 
     public function Link($action = null): string
@@ -80,13 +90,28 @@ class WishlistController extends Controller
         return $this->mutate($request, 'moveall');
     }
 
+    public function createlist(HTTPRequest $request)
+    {
+        return $this->manageList($request, 'create');
+    }
+
+    public function renamelist(HTTPRequest $request)
+    {
+        return $this->manageList($request, 'rename');
+    }
+
+    public function deletelist(HTTPRequest $request)
+    {
+        return $this->manageList($request, 'delete');
+    }
+
     protected function mutate(HTTPRequest $request, string $op)
     {
         if (!$request->isPOST() || !SecurityToken::inst()->checkRequest($request)) {
             return $this->httpError(400);
         }
 
-        $handler = $this->currentHandler();
+        $handler = $this->currentHandler($request);
         if (!$handler) {
             $backURL = urlencode((string) $request->getHeader('Referer'));
 
@@ -126,13 +151,21 @@ class WishlistController extends Controller
     }
 
     /**
-     * The wishlist to operate on: the member's database list, or a guest session list (when allow_guest),
-     * or null — meaning the guest must log in first.
+     * The wishlist to operate on: the member's database list (a specific owned list when allow_multiple_lists
+     * and a valid WishlistID is posted, otherwise their default list), or a guest session list (when
+     * allow_guest), or null — meaning the guest must log in first.
      */
-    protected function currentHandler(): ?WishlistHandler
+    protected function currentHandler(HTTPRequest $request): ?WishlistHandler
     {
         $member = Security::getCurrentUser();
         if ($member) {
+            if (self::config()->get('allow_multiple_lists')) {
+                $list = $member->WishlistByID((int) $request->postVar('WishlistID'));
+                if ($list) {
+                    return $list;
+                }
+            }
+
             return $member->Wishlist();
         }
 
@@ -141,6 +174,58 @@ class WishlistController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Create / rename / delete one of the member's named lists. Member-only, POST + CSRF, and only when
+     * allow_multiple_lists is on.
+     */
+    protected function manageList(HTTPRequest $request, string $op)
+    {
+        if (!$request->isPOST() || !SecurityToken::inst()->checkRequest($request)) {
+            return $this->httpError(400);
+        }
+
+        if (!self::config()->get('allow_multiple_lists')) {
+            return $this->httpError(400);
+        }
+
+        $member = Security::getCurrentUser();
+        if (!$member) {
+            $backURL = urlencode((string) $request->getHeader('Referer'));
+
+            return $this->redirect(Controller::join_links(Security::login_url(), '?BackURL=' . $backURL));
+        }
+
+        $title = trim((string) $request->postVar('Title'));
+
+        if ($op === 'create') {
+            $list = Wishlist::create();
+            $list->MemberID = $member->ID;
+            if ($title !== '') {
+                $list->Title = $title;
+            }
+            $list->write();
+            $this->extend('onCreateWishlist', $list);
+
+            return $this->back($request);
+        }
+
+        $list = $member->WishlistByID((int) $request->postVar('WishlistID'));
+        if (!$list) {
+            return $this->httpError(404);
+        }
+
+        if ($op === 'rename' && $title !== '') {
+            $list->Title = $title;
+            $list->write();
+            $this->extend('onRenameWishlist', $list);
+        } elseif ($op === 'delete') {
+            $this->extend('onDeleteWishlist', $list);
+            $list->delete();
+        }
+
+        return $this->back($request);
     }
 
     protected function buyableFromRequest(HTTPRequest $request): ?Buyable
