@@ -55,6 +55,12 @@ class WishlistController extends Controller
     private static bool $enable_popup = true;
 
     /**
+     * Let members share a wishlist as a public, read-only link (anyone with the link can view it). Off by
+     * default. When on, the account area gains share / stop-sharing controls.
+     */
+    private static bool $allow_sharing = false;
+
+    /**
      * @var array<string>
      */
     private static array $allowed_actions = [
@@ -67,6 +73,9 @@ class WishlistController extends Controller
         'renamelist',
         'deletelist',
         'lists',
+        'share',
+        'unshare',
+        'shared',
     ];
 
     public function Link($action = null): string
@@ -129,6 +138,71 @@ class WishlistController extends Controller
         }
 
         return $this->jsonResponse($this->listsPayload($member, $this->buyableFromRequest($request)));
+    }
+
+    public function share(HTTPRequest $request)
+    {
+        return $this->setSharing($request, true);
+    }
+
+    public function unshare(HTTPRequest $request)
+    {
+        return $this->setSharing($request, false);
+    }
+
+    /**
+     * Public, read-only view of a shared wishlist, found by its token. No login required.
+     */
+    public function shared(HTTPRequest $request)
+    {
+        $token = (string) $request->param('ID');
+        if ($token === '') {
+            return $this->httpError(404);
+        }
+
+        $list = Wishlist::get()->filter(['Token' => $token, 'Visibility' => 'Shared'])->first();
+        if (!$list) {
+            return $this->httpError(404);
+        }
+
+        return $this->customise(['SharedWishlist' => $list])
+            ->renderWith(['SilverShop\Wishlist\WishlistShared']);
+    }
+
+    /**
+     * Toggle a member's list between shared (public read-only link) and private. POST + CSRF, owner-only,
+     * and only when allow_sharing is on.
+     */
+    protected function setSharing(HTTPRequest $request, bool $share)
+    {
+        if (!$request->isPOST() || !SecurityToken::inst()->checkRequest($request)) {
+            return $this->httpError(400);
+        }
+        if (!self::config()->get('allow_sharing')) {
+            return $this->httpError(400);
+        }
+
+        $member = Security::getCurrentUser();
+        if (!$member) {
+            $backURL = urlencode((string) $request->getHeader('Referer'));
+
+            return $this->redirect(Controller::join_links(Security::login_url(), '?BackURL=' . $backURL));
+        }
+
+        $id = (int) $request->postVar('WishlistID');
+        $list = $id ? $member->WishlistByID($id) : $member->Wishlist();
+        if (!$list) {
+            return $this->httpError(404);
+        }
+
+        $list->Visibility = $share ? 'Shared' : 'Private';
+        if ($share) {
+            $list->ensureToken();
+        }
+        $list->write();
+        $this->extend($share ? 'onShareWishlist' : 'onUnshareWishlist', $list);
+
+        return $this->back($request);
     }
 
     protected function mutate(HTTPRequest $request, string $op)

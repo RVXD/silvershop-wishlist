@@ -21,3 +21,7 @@ en:
     Create: 'Create'
     Close: 'Close'
     Done: 'Done'
+    Share: 'Share'
+    StopSharing: 'Stop sharing'
+    ShareLinkLabel: 'Share link'
+    SharedIntro: 'A wishlist shared with you'

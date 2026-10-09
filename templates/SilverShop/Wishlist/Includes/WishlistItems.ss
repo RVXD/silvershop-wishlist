@@ -22,6 +22,8 @@
         .wishlist__manage input[type=text]{padding:3px 7px}
         .wishlist__manage button{background:none;border:1px solid #ccc;border-radius:4px;padding:3px 10px;cursor:pointer;color:#555}
         .wishlist__new{margin:1.5rem 0 0;padding:1rem 0 0;border-top:1px solid #eee}
+        .wishlist__share{display:inline-flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin:.1rem 0}
+        .wishlist__sharelink{padding:3px 7px;min-width:220px;border:1px solid #ccc;border-radius:4px;color:#555}
     </style>
 
     <% if $Top.AllowMultipleLists %>
@@ -32,6 +34,14 @@
                         <h2>$Title.XML</h2>
                         <form method="post" action="$Top.WishlistRenameLink" class="wishlist__manage">$Top.WishlistSecurityField<input type="hidden" name="WishlistID" value="$ID" /><input type="text" name="Title" value="$Title.ATT" aria-label="<%t SilverShop\Wishlist.ListName 'List name' %>" /><button type="submit"><%t SilverShop\Wishlist.Rename "Rename" %></button></form>
                         <form method="post" action="$Top.WishlistDeleteLink" class="wishlist__manage">$Top.WishlistSecurityField<input type="hidden" name="WishlistID" value="$ID" /><button type="submit"><%t SilverShop\Wishlist.DeleteList "Delete" %></button></form>
+                        <% if $Top.AllowSharing %>
+                            <% if $IsShared %>
+                                <form method="post" action="$Top.WishlistUnshareLink" class="wishlist__manage">$Top.WishlistSecurityField<input type="hidden" name="WishlistID" value="$ID" /><button type="submit"><%t SilverShop\Wishlist.StopSharing "Stop sharing" %></button></form>
+                                <input type="text" class="wishlist__sharelink" readonly value="$ShareLink.ATT" aria-label="<%t SilverShop\Wishlist.ShareLinkLabel 'Share link' %>" onclick="this.select()" />
+                            <% else %>
+                                <form method="post" action="$Top.WishlistShareLink" class="wishlist__manage">$Top.WishlistSecurityField<input type="hidden" name="WishlistID" value="$ID" /><button type="submit"><%t SilverShop\Wishlist.Share "Share" %></button></form>
+                            <% end_if %>
+                        <% end_if %>
                     </div>
                     <% if $Items %>
                         <ul class="wishlist__list">
@@ -65,6 +75,16 @@
         </div>
     <% else %>
         <h2><%t SilverShop\Wishlist.Heading "My wishlist" %></h2>
+        <% if $Top.AllowSharing %><% with $CurrentMember.Wishlist %>
+            <div class="wishlist__share">
+                <% if $IsShared %>
+                    <form method="post" action="$Top.WishlistUnshareLink" class="wishlist__manage">$Top.WishlistSecurityField<input type="hidden" name="WishlistID" value="$ID" /><button type="submit"><%t SilverShop\Wishlist.StopSharing "Stop sharing" %></button></form>
+                    <input type="text" class="wishlist__sharelink" readonly value="$ShareLink.ATT" aria-label="<%t SilverShop\Wishlist.ShareLinkLabel 'Share link' %>" onclick="this.select()" />
+                <% else %>
+                    <form method="post" action="$Top.WishlistShareLink" class="wishlist__manage">$Top.WishlistSecurityField<input type="hidden" name="WishlistID" value="$ID" /><button type="submit"><%t SilverShop\Wishlist.Share "Share" %></button></form>
+                <% end_if %>
+            </div>
+        <% end_with %><% end_if %>
 
         <% if $CurrentMember.Wishlist.Items %>
             <ul class="wishlist__list">

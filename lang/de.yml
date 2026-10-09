@@ -21,3 +21,7 @@ de:
     Create: 'Erstellen'
     Close: 'Schließen'
     Done: 'Fertig'
+    Share: 'Teilen'
+    StopSharing: 'Nicht mehr teilen'
+    ShareLinkLabel: 'Freigabelink'
+    SharedIntro: 'Eine mit Ihnen geteilte Wunschliste'

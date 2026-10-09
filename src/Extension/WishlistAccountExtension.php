@@ -78,6 +78,24 @@ class WishlistAccountExtension extends Extension
         return WishlistController::singleton()->Link('moveall');
     }
 
+    /**
+     * Whether members may share a list as a public read-only link (mirrors the controller config).
+     */
+    public function AllowSharing(): bool
+    {
+        return (bool) WishlistController::config()->get('allow_sharing');
+    }
+
+    public function WishlistShareLink(): string
+    {
+        return WishlistController::singleton()->Link('share');
+    }
+
+    public function WishlistUnshareLink(): string
+    {
+        return WishlistController::singleton()->Link('unshare');
+    }
+
     public function WishlistCreateLink(): string
     {
         return WishlistController::singleton()->Link('createlist');

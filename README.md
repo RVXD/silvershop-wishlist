@@ -68,6 +68,9 @@ uses this):
 | `wishlist/renamelist` | POST | Rename an owned list (`WishlistID`, `Title`) *(multi-list)* |
 | `wishlist/deletelist` | POST | Delete an owned list (`WishlistID`) *(multi-list)* |
 | `wishlist/lists` | GET | JSON of the member's lists + a `contains` flag for `ProductID`/`VariationID` *(multi-list)* |
+| `wishlist/share` | POST | Make a list public (generates a token) `(WishlistID)` *(sharing)* |
+| `wishlist/unshare` | POST | Make a list private again `(WishlistID)` *(sharing)* |
+| `wishlist/shared/<token>` | GET | Public read-only view of a shared list — no login required *(sharing)* |
 
 The JSON payload is `{ success, inAny, lists: [{ id, title, contains }] }`.
 
@@ -79,7 +82,14 @@ SilverShop\Wishlist\Control\WishlistController:
   remove_on_add_to_cart: false   # remove an item once it's moved to the cart
   allow_multiple_lists: false    # let members keep several named lists (create / rename / delete, pick a target)
   enable_popup: true             # render the built-in "save to list" popup JS (only applies with allow_multiple_lists)
+  allow_sharing: false           # let members share a list as a public read-only link
 ```
+
+**Sharing (`allow_sharing`).** Off by default. Turn it on and the account area gains a **Share** / **Stop sharing**
+control per list: sharing generates a random, unguessable token and exposes the list read-only at
+`/wishlist/shared/<token>` to anyone with the link (no login). The public page shows only the list title and its
+products — never the owner's name or email — and is marked `noindex`. Stop-sharing makes the link 404 again. Override
+the `SilverShop\Wishlist\WishlistShared` template to restyle the public page.
 
 **Multiple named lists (`allow_multiple_lists`).** Off by default — every member has one list. Turn it on and the
 account area gains create / rename / delete controls for named lists, and the move-to-cart / remove actions operate on
@@ -111,6 +121,7 @@ Everything the module renders or decides is overridable — no core edits needed
 | `onAddToWishlist($item, $buyable)` | `Wishlist` | A buyable is added to a list |
 | `onRemoveFromWishlist($item, $buyable)` | `Wishlist` | A buyable is removed from a list |
 | `onCreateWishlist($list)` / `onRenameWishlist($list)` / `onDeleteWishlist($list)` | `WishlistController` | A list is created / renamed / deleted |
+| `onShareWishlist($list)` / `onUnshareWishlist($list)` | `WishlistController` | A list is shared / unshared |
 | `updateListsPayload(&$payload, $member, $buyable)` | `WishlistController` | Building the popup's JSON (add/adjust fields) |
 | `updateWishlistResponse($request)` | `WishlistController` | Just before a non-AJAX redirect |
 
@@ -130,9 +141,7 @@ All front-end strings go through `<%t SilverShop\Wishlist.* %>`. Ships with **en
 ## Roadmap
 
 Done: member wishlist (v1) + guest session wishlist merged on login (v2) + multiple named lists (v3,
-`allow_multiple_lists`).
-
-- **v4** — sharing (public link).
+`allow_multiple_lists`) + public read-only sharing (v4, `allow_sharing`).
 
 Back-in-stock / price-drop *alerts* are out of scope here (a separate `silvershop/stock-alerts` concern).
 

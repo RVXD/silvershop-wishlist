@@ -21,3 +21,7 @@ nl:
     Create: 'Aanmaken'
     Close: 'Sluiten'
     Done: 'Klaar'
+    Share: 'Delen'
+    StopSharing: 'Stop met delen'
+    ShareLinkLabel: 'Deel-link'
+    SharedIntro: 'Een verlanglijst die met je is gedeeld'

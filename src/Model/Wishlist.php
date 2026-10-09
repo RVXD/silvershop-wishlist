@@ -7,6 +7,9 @@ namespace SilverShop\Wishlist\Model;
 use SilverShop\Cart\ShoppingCart;
 use SilverShop\Model\Buyable;
 use SilverShop\Model\Variation\Variation;
+use SilverShop\Wishlist\Control\WishlistController;
+use SilverStripe\Control\Controller;
+use SilverStripe\Control\Director;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\HasManyList;
 use SilverStripe\Security\Member;
@@ -18,6 +21,8 @@ use SilverStripe\Security\Security;
  * is modelled so later tiers (multiple named lists, sharing) attach here without reshaping items.
  *
  * @property string $Title
+ * @property string $Visibility
+ * @property string $Token
  * @property int $MemberID
  * @method Member Member()
  * @method HasManyList<WishlistItem> Items()
@@ -31,6 +36,16 @@ class Wishlist extends DataObject implements WishlistHandler
      */
     private static array $db = [
         'Title' => 'Varchar(255)',
+        // Sharing (v4): a Shared list is viewable read-only by anyone holding its (random) Token.
+        'Visibility' => "Enum('Private,Shared','Private')",
+        'Token' => 'Varchar(32)',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    private static array $indexes = [
+        'Token' => true,
     ];
 
     /**
@@ -158,8 +173,50 @@ class Wishlist extends DataObject implements WishlistHandler
         }
     }
 
+    /**
+     * Whether this list is shared (publicly viewable read-only by its token).
+     */
+    public function IsShared(): bool
+    {
+        return $this->Visibility === 'Shared';
+    }
+
+    /**
+     * Ensure the list has a share token (random, unguessable), creating one on first share.
+     */
+    public function ensureToken(): string
+    {
+        if (!$this->Token) {
+            $this->Token = bin2hex(random_bytes(16));
+            if ($this->isInDB()) {
+                $this->write();
+            }
+        }
+
+        return (string) $this->Token;
+    }
+
+    /**
+     * The public, absolute share URL for this list (empty until it has a token) — for copy/paste sharing.
+     */
+    public function ShareLink(): string
+    {
+        if (!$this->Token) {
+            return '';
+        }
+
+        return (string) Director::absoluteURL(
+            Controller::join_links(WishlistController::singleton()->Link('shared'), $this->Token)
+        );
+    }
+
     public function canView($member = null): bool
     {
+        // A shared list is viewable by anyone (read-only); otherwise only its owner.
+        if ($this->IsShared()) {
+            return true;
+        }
+
         return $this->ownedBy($member);
     }
 
