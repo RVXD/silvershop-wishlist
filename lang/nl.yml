@@ -1,0 +1,13 @@
+nl:
+  SilverShop\Wishlist:
+    AddToCart: 'In winkelwagen'
+    Empty: 'Je verlanglijst is leeg.'
+    Heading: 'Mijn verlanglijst'
+    InStock: 'Op voorraad'
+    MoveAll: 'Alles in winkelwagen'
+    OutOfStock: 'Niet op voorraad'
+    PriceDropped: 'prijs verlaagd'
+    Remove: 'Verwijderen'
+    Save: 'Bewaar voor later'
+    Saved: 'Bewaard'
+    ViewWishlist: 'Bekijk verlanglijst'

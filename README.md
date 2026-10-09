@@ -33,7 +33,8 @@ Then run `/dev/build?flush=all`.
 ```
 
 It renders for members (and for guests when `allow_guest` is on) and posts to the wishlist controller
-(CSRF-checked), toggling the whole product on/off the list and returning to the page.
+(CSRF-checked), toggling the whole product on/off the list and returning to the page. Once an item is saved,
+members also get a small **View wishlist** link next to the button, pointing at their account wishlist.
 
 **Account area — the wishlist section.** It's available at `…/account/wishlist` out of the box (rendered by
 `AccountPage_wishlist.ss`). Add a link to it in your account navigation — the account controller exposes
@@ -74,6 +75,11 @@ SilverShop\Wishlist\Control\WishlistController:
 
 `onAddToWishlist($item, $buyable)` / `onRemoveFromWishlist($item, $buyable)` on `Wishlist`, and
 `updateWishlistResponse($request)` on the controller.
+
+## Translations
+
+All front-end strings go through `<%t SilverShop\Wishlist.* %>`. Ships with **en, nl, de, fr, es, it**
+(`lang/*.yml`); override or add locales the usual Silverstripe way.
 
 ## Roadmap
 

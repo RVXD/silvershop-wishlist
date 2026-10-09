@@ -1,0 +1,13 @@
+en:
+  SilverShop\Wishlist:
+    AddToCart: 'Add to cart'
+    Empty: 'Your wishlist is empty.'
+    Heading: 'My wishlist'
+    InStock: 'In stock'
+    MoveAll: 'Add all to cart'
+    OutOfStock: 'Out of stock'
+    PriceDropped: 'price dropped'
+    Remove: 'Remove'
+    Save: 'Save for later'
+    Saved: 'Saved'
+    ViewWishlist: 'View wishlist'

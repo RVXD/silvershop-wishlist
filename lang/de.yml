@@ -1,0 +1,13 @@
+de:
+  SilverShop\Wishlist:
+    AddToCart: 'In den Warenkorb'
+    Empty: 'Ihre Wunschliste ist leer.'
+    Heading: 'Meine Wunschliste'
+    InStock: 'Auf Lager'
+    MoveAll: 'Alles in den Warenkorb'
+    OutOfStock: 'Nicht auf Lager'
+    PriceDropped: 'Preis gesunken'
+    Remove: 'Entfernen'
+    Save: 'Für später speichern'
+    Saved: 'Gespeichert'
+    ViewWishlist: 'Wunschliste ansehen'
