@@ -25,3 +25,8 @@ de:
     StopSharing: 'Nicht mehr teilen'
     ShareLinkLabel: 'Freigabelink'
     SharedIntro: 'Eine mit Ihnen geteilte Wunschliste'
+  SilverShop\Wishlist\Report\MostWishlistedProductsReport:
+    TITLE: 'Meistgewünschte Produkte'
+    DESC: 'Produkte sortiert danach, wie oft sie auf eine Wunschliste gesetzt wurden.'
+    ColProduct: 'Produkt'
+    ColTimesWishlisted: 'Anzahl Wünsche'

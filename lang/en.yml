@@ -25,3 +25,8 @@ en:
     StopSharing: 'Stop sharing'
     ShareLinkLabel: 'Share link'
     SharedIntro: 'A wishlist shared with you'
+  SilverShop\Wishlist\Report\MostWishlistedProductsReport:
+    TITLE: 'Most wishlisted products'
+    DESC: 'Products ranked by how many times they have been saved to a wishlist.'
+    ColProduct: 'Product'
+    ColTimesWishlisted: 'Times wishlisted'

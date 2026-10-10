@@ -25,3 +25,8 @@ it:
     StopSharing: 'Smetti di condividere'
     ShareLinkLabel: 'Link di condivisione'
     SharedIntro: 'Una lista dei desideri condivisa con te'
+  SilverShop\Wishlist\Report\MostWishlistedProductsReport:
+    TITLE: 'Prodotti più desiderati'
+    DESC: 'Prodotti ordinati in base a quante volte sono stati salvati in una lista dei desideri.'
+    ColProduct: 'Prodotto'
+    ColTimesWishlisted: 'Numero di desideri'

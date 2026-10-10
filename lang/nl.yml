@@ -25,3 +25,8 @@ nl:
     StopSharing: 'Stop met delen'
     ShareLinkLabel: 'Deel-link'
     SharedIntro: 'Een verlanglijst die met je is gedeeld'
+  SilverShop\Wishlist\Report\MostWishlistedProductsReport:
+    TITLE: 'Meest gewenste producten'
+    DESC: 'Producten gerangschikt op hoe vaak ze op een verlanglijst zijn gezet.'
+    ColProduct: 'Product'
+    ColTimesWishlisted: 'Aantal keer gewenst'
